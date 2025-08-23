@@ -41,7 +41,7 @@ struct ContentView: View {
                    newBook = Book(title: "", author: "", image:"default_book", description: "", rating: 0, review: "", status: .planToRead)
                 }
             } content: {
-                EditView(book: $newBook)
+                AddEditView(book: $newBook)
             }
         }
         

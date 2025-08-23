@@ -4,6 +4,7 @@
 //
 //  Created by Brandon Bennington on 20/08/25.
 //
+public let NEW_BOOK = Book(title: "", author: "", description: "", rating: 0, review: "", status: .planToRead, genre:.classic)
 
 public let GRID_COLUMN_NUMBERS_KEY = "gridColumnNumbers"
 

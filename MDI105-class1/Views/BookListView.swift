@@ -8,14 +8,24 @@
 import SwiftUI
 
 struct BookListView: View {
-    @Binding var books: [Book]
-    @State private var search = ""
-    @State private var isPresentingAdd = false
 
-    private var filtered: [Book] {
-        guard !search.isEmpty else { return books }
-        let q = search.lowercased()
-        return books.filter { $0.title.lowercased().contains(q) }
+    @Binding var books: [Book]
+    @State private var activeSheet: ActiveSheet? = nil
+    @State var selectedGenre: Genre?
+    @State var selectedStatus: ReadingStatus?
+    @State private var newBook = NEW_BOOK
+    
+    private var filteredBooks: [Book] {
+        books.filter { book in
+            var matches = true
+            if let genre = selectedGenre {
+                matches = matches && book.genre == genre
+            }
+            if let status = selectedStatus {
+                matches = matches && book.status == status
+            }
+            return matches
+        }
     }
 
     var body: some View {

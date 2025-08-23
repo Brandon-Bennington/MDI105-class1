@@ -1,34 +1,33 @@
-// Book.swift
+//
+//  Book.swift
+//  MDI105_class1
+//
+//  Created by Brandon Bennington on 8/9/25.
+//
+
 import Foundation
+import SwiftData
 
-struct Book: Identifiable, Codable {
-    let id: UUID
+public struct Book: Identifiable {
+    public let id = UUID()
     var title: String
-    var image: String
-    var description: String
-
+    var author: String
+//    var image: String
+    var imageId: PersistentIdentifier?;
+    var description: String = ""
+    var rating: Int = 0    // 1–5 stars
+    var review: String = ""
+    var status: ReadingStatus = .planToRead
+    var genre: Genre
     var isFavorite: Bool = false
-    var genre: Genre = .fiction
-    var status: ReadingStatus = .toRead
-    var rating: Int = 0
+}
 
-    init(
-        id: UUID = UUID(),
-        title: String,
-        image: String,
-        description: String,
-        isFavorite: Bool = false,
-        genre: Genre = .fiction,
-        status: ReadingStatus = .toRead,
-        rating: Int = 0
-    ) {
-        self.id = id
-        self.title = title
-        self.image = image
-        self.description = description
-        self.isFavorite = isFavorite
-        self.genre = genre
-        self.status = status
-        self.rating = rating
-    }
+@Model
+class PersistentBook {
+    
+    var title: String
+    var author: String
+    @Attribute(.externalStorage) var imageData: Data?
+    
+    init(title: String, author: String)
 }

@@ -9,6 +9,15 @@ import SwiftUI
 
 struct LinkView: View {
     let book: Book
+    var bookImage: UIImage? {
+        guard let imageId = book.imageId,
+              let imageModel = modelContext.model(for: imageId) as? UploadedImage,
+                let imageData = imageModel.imageData as Data? else {
+            return UIImage(systemName: "book")
+        }
+        return UIImage(data: imageData)
+        
+    }
 
     var body: some View {
         HStack(spacing: 12) {

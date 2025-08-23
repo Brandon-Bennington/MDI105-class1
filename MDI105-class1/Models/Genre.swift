@@ -5,7 +5,6 @@
 //  Created by Brandon Bennington on 20/08/25.
 //
 
-// Genre.swift
 import SwiftUI
 
 enum Genre: String, CaseIterable, Codable {
