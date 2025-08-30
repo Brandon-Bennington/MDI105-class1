@@ -6,18 +6,20 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
     
-    @State private var books: [Book] = getBooks()
+    // Use @Query to fetch all books from SwiftData
+    @Query var books: [PersistentBook]
+    
+    @Environment(\.modelContext) var modelContext
     @State private var showingAddBookSheet = false
-    @State private var newBook = Book(title: "", author: "", image:"default_book", description: "", rating: 0, review: "", status: .planToRead)
     
     var body: some View {
         NavigationView {
-            // Using a binding ($books) allows child views to directly modify the array.
-            List($books) { $book in
-                NavigationLink(destination: DetailView(book: $book)) {
+            List(books) { book in
+                NavigationLink(destination: DetailView(book: book)) {
                     LinkView(book: book)
                 }
             }
@@ -28,26 +30,18 @@ struct ContentView: View {
                         Image(systemName: "plus.circle.fill")
                             .font(.title2)
                     }
-                    // ACCESSIBILITY: A button with only an icon is invisible to VoiceOver
-                    // without a label. This is essential.
                     .accessibilityLabel("Add new book")
                 }
             }
-            // When `showingAddBookSheet` is true, this view slides up.
             .sheet(isPresented: $showingAddBookSheet) {
-                if !newBook.title.isEmpty {
-                    books.append(newBook)
-                } else{
-                   newBook = Book(title: "", author: "", image:"default_book", description: "", rating: 0, review: "", status: .planToRead)
-                }
-            } content: {
-                AddEditView(book: $newBook)
+                AddEditView()
             }
         }
-        
     }
 }
 
+
 #Preview {
     ContentView()
+        .modelContainer(for: [PersistentBook.self, UploadedImage.self])
 }

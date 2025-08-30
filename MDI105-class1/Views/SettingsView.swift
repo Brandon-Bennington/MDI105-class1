@@ -7,10 +7,6 @@
 
 import SwiftUI
 
-enum Theme: String, CaseIterable {
-    case light, dark, system
-}
-
 struct SettingsView: View {
     
     @AppStorage("theme") private var theme: Theme = .system

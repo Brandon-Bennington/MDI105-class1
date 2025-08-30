@@ -8,26 +8,48 @@
 import Foundation
 import SwiftData
 
-public struct Book: Identifiable {
-    public let id = UUID()
-    var title: String
-    var author: String
-//    var image: String
-    var imageId: PersistentIdentifier?;
-    var description: String = ""
-    var rating: Int = 0    // 1–5 stars
-    var review: String = ""
-    var status: ReadingStatus = .planToRead
-    var genre: Genre
-    var isFavorite: Bool = false
-}
-
 @Model
 class PersistentBook {
-    
     var title: String
     var author: String
-    @Attribute(.externalStorage) var imageData: Data?
+    var bookDescription: String // renamed to avoid conflicts with NSObject.description
+    var rating: Int
+    var review: String
+    var status: ReadingStatus
+    var genre: Genre
+    var isFavorite: Bool
     
-    init(title: String, author: String)
+    // Relationship to UploadedImage for cover image
+    @Relationship var coverImage: UploadedImage?
+    
+    init(
+        title: String,
+        author: String,
+        description: String = "",
+        genre: Genre = .fiction,
+        rating: Int = 0,
+        review: String = "",
+        status: ReadingStatus = .planToRead,
+        isFavorite: Bool = false,
+        coverImage: UploadedImage? = nil
+    ) {
+        self.title = title
+        self.author = author
+        self.bookDescription = description
+        self.rating = rating
+        self.review = review
+        self.status = status
+        self.genre = genre
+        self.isFavorite = isFavorite
+        self.coverImage = coverImage
+    }
+}
+
+// MARK: - Convenience computed properties for compatibility
+extension PersistentBook {
+    // For views that expect 'description' property
+    var description: String {
+        get { bookDescription }
+        set { bookDescription = newValue }
+    }
 }

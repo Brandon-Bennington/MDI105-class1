@@ -6,18 +6,17 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct MDI105_class1App: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .modelContainer(for:
-                                    [
-                                        UploadedImage.self,
-                                        PersistentBook.self
-                                    ]
-                )
+            MainTabView()
+                .modelContainer(for: [
+                    PersistentBook.self,
+                    UploadedImage.self
+                ])
         }
     }
 }

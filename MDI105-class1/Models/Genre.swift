@@ -14,4 +14,5 @@ enum Genre: String, CaseIterable, Codable {
     case fantasy = "Fantasy"
     case mystery = "Mystery"
     case biography = "Biography"
+    case classic = "Classic"
 }

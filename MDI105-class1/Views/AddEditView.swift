@@ -10,112 +10,272 @@ import PhotosUI
 import SwiftData
 
 struct AddEditView: View {
-    @Binding var book: Book
-    @State private var bookCopy: Book
-
-    @Environment(\.dismiss) var dismiss
+    // Optional book means we're editing, nil means we're adding
+    let bookToEdit: PersistentBook?
     
-    @State private var navigationTitle: String
+    // Local state for form data
+    @State private var title = ""
+    @State private var author = ""
+    @State private var bookDescription = ""
+    @State private var rating = 0
+    @State private var review = ""
+    @State private var status = ReadingStatus.planToRead
+    @State private var genre = Genre.fiction
+    @State private var isFavorite = false
     
-    //Image related variables
-    @Environment(\.modelContext) var modelContext
-    @State var bookImage: UIImage?
+    // Image handling
+    @State private var selectedImage: UIImage?
     @State private var photoPickerItem: PhotosPickerItem?
-
-    // A custom initializer to set the title when the view is first created.
-    init(book: Binding<Book>) {
-        // The underscore `_book` refers to the Binding property wrapper itself.
-        self._book = book
-
-        // The underscore `_navigationTitle` refers to the State property wrapper.
-        // We set its initial value based on the book's state at this moment.
-        self._navigationTitle = State(initialValue: book.wrappedValue.title.isEmpty
-                                      ? "Add Book"
-                                      : "Edit Book")
-
-        // condition ? if_true : if_false → ternary operator
-        bookCopy = book.wrappedValue
+    
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.modelContext) var modelContext
+    
+    private var isEditing: Bool {
+        bookToEdit != nil
+    }
+    
+    private var navigationTitle: String {
+        isEditing ? "Edit Book" : "Add Book"
+    }
+    
+    // Initializer for adding new book
+    init() {
+        self.bookToEdit = nil
+    }
+    
+    // Initializer for editing existing book
+    init(book: PersistentBook) {
+        self.bookToEdit = book
     }
 
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Book cover")) {
+                Section(header: Text("Book Cover")) {
                     PhotosPicker(
                         selection: $photoPickerItem,
                         matching: .images,
                         photoLibrary: .shared()
                     ) {
-                        
-                        Image(uiImage: bookImage ?? UIImage(resource: .defaultBook))
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 100, height: 100)
+                        if let selectedImage = selectedImage {
+                            Image(uiImage: selectedImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 100, height: 100)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        } else if let bookImage = bookToEdit?.coverImage?.imageData,
+                                  let uiImage = UIImage(data: bookImage) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 100, height: 100)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        } else {
+                            Image(systemName: "book.closed")
+                                .font(.system(size: 50))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 100, height: 100)
+                                .background(.gray.opacity(0.1))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
                     }
-                    .onChange(of: photoPickerItem) { _,_ in
+                    .onChange(of: photoPickerItem) { _, _ in
                         Task {
                             if let photoPickerItem,
-                               let imageData = try? await photoPickerItem.loadTransferable(type: Data.self) {
-                                if let uiImage = UIImage(data: imageData) {
-                                    self.bookImage = uiImage
-                                }
+                               let imageData = try? await photoPickerItem.loadTransferable(type: Data.self),
+                               let uiImage = UIImage(data: imageData) {
+                                selectedImage = uiImage
                             }
-                            
                         }
                     }
                 }
+                
                 Section(header: Text("Book Details")) {
-                    TextField("Title", text: $bookCopy.title)
-                    TextField("Author", text: $bookCopy.author)
+                    TextField("Title", text: $title)
+                    TextField("Author", text: $author)
+                    
+                    Picker("Genre", selection: $genre) {
+                        ForEach(Genre.allCases, id: \.self) { genre in
+                            Text(genre.rawValue).tag(genre)
+                        }
+                    }
 
-                    Picker("Status", selection: $bookCopy.status) {
+                    Picker("Status", selection: $status) {
                         ForEach(ReadingStatus.allCases, id: \.self) { status in
                             Text(status.rawValue).tag(status)
                         }
                     }
 
-                    TextEditor(text: $bookCopy.description)
-                        .frame(height: 120)
+                    VStack(alignment: .leading) {
+                        Text("Description")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        TextEditor(text: $bookDescription)
+                            .frame(height: 100)
+                    }
                 }
 
                 Section(header: Text("My Rating & Review")) {
-                    StarRatingView(rating: $bookCopy.rating)
-                    TextEditor(text: $bookCopy.review)
-                        .frame(height: 150)
+                    VStack(alignment: .leading) {
+                        Text("Rating")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        
+                        StarRatingEditView(rating: $rating)
+                    }
+                    
+                    VStack(alignment: .leading) {
+                        Text("Review")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        TextEditor(text: $review)
+                            .frame(height: 120)
+                    }
                 }
 
                 Section {
-                    Toggle("Favorite", isOn: $bookCopy.isFavorite)
+                    Toggle("Favorite", isOn: $isFavorite)
                 }
             }
             .navigationTitle(navigationTitle)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
-                        // Discard changes
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        // Copy draft back into binding
-                        if bookImage != nil {
-                            let newUploadedImage = UploadedImage(imageData: bookImage?.jpegData(compressionQuality: 0.8))
-                            modelContext.insert(newUploadedImage)
-                            do {
-                                try modelContext.save()
-                            } catch {
-                                print("Error while saving the image: \(error)")
-                            }
-                            bookCopy.imageID = newUploadedImage.persistentModelID
-                            let _ = print("New image id: \(newUploadedImage.persistentModelID)")
-                            
-                        }
-                        book = bookCopy
+                        saveBook()
                         dismiss()
                     }
+                    .disabled(title.isEmpty || author.isEmpty)
                 }
+            }
+            .onAppear {
+                loadBookData()
             }
         }
     }
+    
+    private func loadBookData() {
+        guard let book = bookToEdit else { return }
+        
+        title = book.title
+        author = book.author
+        bookDescription = book.description
+        rating = book.rating
+        review = book.review
+        status = book.status
+        genre = book.genre
+        isFavorite = book.isFavorite
+        
+        // Load existing image if available
+        if let coverImage = book.coverImage,
+           let imageData = coverImage.imageData,
+           let uiImage = UIImage(data: imageData) {
+            selectedImage = uiImage
+        }
+    }
+    
+    private func saveBook() {
+        if let existingBook = bookToEdit {
+            // Update existing book
+            existingBook.title = title
+            existingBook.author = author
+            existingBook.description = bookDescription
+            existingBook.rating = rating
+            existingBook.review = review
+            existingBook.status = status
+            existingBook.genre = genre
+            existingBook.isFavorite = isFavorite
+            
+            // Handle image update
+            if let newImage = selectedImage,
+               let imageData = newImage.jpegData(compressionQuality: 0.8) {
+                
+                if let existingImage = existingBook.coverImage {
+                    // Update existing image
+                    existingImage.imageData = imageData
+                } else {
+                    // Create new image
+                    let uploadedImage = UploadedImage(imageData: imageData)
+                    modelContext.insert(uploadedImage)
+                    existingBook.coverImage = uploadedImage
+                }
+            }
+        } else {
+            // Create new book
+            let newBook = PersistentBook(
+                title: title,
+                author: author,
+                description: bookDescription,
+                genre: genre,
+                rating: rating,
+                review: review,
+                status: status,
+                isFavorite: isFavorite
+            )
+            
+            // Handle image for new book
+            if let newImage = selectedImage,
+               let imageData = newImage.jpegData(compressionQuality: 0.8) {
+                let uploadedImage = UploadedImage(imageData: imageData)
+                modelContext.insert(uploadedImage)
+                newBook.coverImage = uploadedImage
+            }
+            
+            modelContext.insert(newBook)
+        }
+        
+        // Save changes
+        try? modelContext.save()
+    }
+}
+
+// Custom star rating editor
+struct StarRatingEditView: View {
+    @Binding var rating: Int
+    
+    var body: some View {
+        HStack {
+            ForEach(1...5, id: \.self) { star in
+                Button {
+                    rating = star
+                } label: {
+                    Image(systemName: star <= rating ? "star.fill" : "star")
+                        .foregroundColor(.yellow)
+                        .font(.title2)
+                }
+                .buttonStyle(.plain)
+            }
+            
+            if rating > 0 {
+                Button("Clear") {
+                    rating = 0
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+        }
+        .accessibilityLabel("Rating \(rating) out of 5")
+    }
+}
+
+#Preview("Add Book") {
+    AddEditView()
+        .modelContainer(for: [PersistentBook.self, UploadedImage.self])
+}
+
+#Preview("Edit Book") {
+    let sampleBook = PersistentBook(
+        title: "Sample Book",
+        author: "Sample Author",
+        genre: .fiction,
+        rating: 4
+    )
+    
+    AddEditView(book: sampleBook)
+        .modelContainer(for: [PersistentBook.self, UploadedImage.self])
 }

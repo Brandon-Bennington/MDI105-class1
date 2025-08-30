@@ -8,20 +8,30 @@
 import SwiftUI
 import PhotosUI
 
-public struct ImageField: View {
+struct ImageField: View {
     @Binding var image: UIImage?
     @State private var photoPickerItem: PhotosPickerItem?
 
-    public var body: some View {
+    var body: some View {
         PhotosPicker(
             selection: $photoPickerItem,
             matching: .images,
             photoLibrary: .shared()
         ) {
-            Image(uiImage: image ?? UIImage(resource: .defaultBook))
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 100, height: 100)
+            if let image = image {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 100, height: 100)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else {
+                Image(systemName: "book.closed")
+                    .font(.system(size: 50))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 100, height: 100)
+                    .background(.gray.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
         }
         .onChange(of: photoPickerItem) { _, _ in
             Task {

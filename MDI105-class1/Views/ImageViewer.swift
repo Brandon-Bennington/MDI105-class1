@@ -8,18 +8,28 @@
 import SwiftUI
 import SwiftData
 
-public struct ImageViewer: View {
+struct ImageViewer: View {
     @Query var allImages: [UploadedImage]
-    public var body: some View {
-        List {
-            ForEach(allImages, id: \.id) {
-                Image(uiImage:
-                        UIImage(data: ($0.imageData as Data?)!)
-                            ?? UIImage(resource: .defaultBook))
-                .resizable()
-                .frame(width: 100, height: 100)
+    
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(allImages, id: \.id) { uploadedImage in
+                    if let imageData = uploadedImage.imageData,
+                       let uiImage = UIImage(data: imageData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 100, height: 100)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    } else {
+                        Image(systemName: "photo")
+                            .frame(width: 100, height: 100)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
+            .navigationTitle("All Images")
         }
     }
-    
 }
